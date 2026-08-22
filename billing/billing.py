@@ -6,8 +6,10 @@ from validation import (
     validate_payment
 )
 
-from receipt import generate_receipt
-bill_counter = 1
+from receipt import (
+    generate_receipt,
+    generate_pdf_receipt
+)
 
 
 def generate_bill_number():
@@ -147,6 +149,19 @@ def generate_bill(
         change,
         date_time
     )
+    pdf_path = generate_pdf_receipt(
+    items,
+    shop,
+    bill_number,
+    subtotal,
+    discount,
+    gst,
+    total,
+    payment_method,
+    amount_paid,
+    change,
+    date_time
+)
 
     return {
         "bill_number": bill_number,
@@ -159,4 +174,5 @@ def generate_bill(
         "amount_paid": amount_paid,
         "change": change,
         "receipt": receipt
+        "pdf_path": pdf_path
     }
