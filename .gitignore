@@ -1,4 +1,12 @@
 __pycache__/
 *.pyc
-*.db
+
+inventory.db
+database/inventory.db
+
+images/
+receipts/
+
 .env
+.venv/
+venv/

@@ -1,15 +1,16 @@
 from datetime import datetime
 
-from validation import (
+from billing.validation import (
     validate_items,
     validate_discount,
     validate_payment
 )
 
-from receipt import (
+from billing.receipt import (
     generate_receipt,
     generate_pdf_receipt
 )
+
 bill_counter = 1
 
 def generate_bill_number():

@@ -13,7 +13,10 @@ def create_database():
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             price REAL NOT NULL,
-            stock INTEGER NOT NULL
+            stock INTEGER NOT NULL,
+            gst_rate REAL DEFAULT 0,
+            image_path TEXT,
+            embedding TEXT
         )
     """)
 
@@ -21,16 +24,33 @@ def create_database():
     conn.close()
 
 
-def add_product(product_id, name, price, stock):
+def add_product(
+    product_id,
+    name,
+    price,
+    stock,
+    gst_rate=0,
+    image_path=None,
+    embedding=None
+):
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
     cursor.execute(
         """
-        INSERT INTO inventory (id, name, price, stock)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO inventory
+        (id, name, price, stock, gst_rate, image_path, embedding)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (product_id, name, price, stock)
+        (
+            product_id,
+            name,
+            price,
+            stock,
+            gst_rate,
+            image_path,
+            embedding
+        )
     )
 
     conn.commit()
@@ -42,7 +62,11 @@ def get_product(product_id):
     cursor = conn.cursor()
 
     cursor.execute(
-        "SELECT * FROM inventory WHERE id = ?",
+        """
+        SELECT id, name, price, stock, gst_rate, image_path, embedding
+        FROM inventory
+        WHERE id = ?
+        """,
         (product_id,)
     )
 
@@ -57,7 +81,12 @@ def get_all_products():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM inventory")
+    cursor.execute(
+        """
+        SELECT id, name, price, stock, gst_rate, image_path, embedding
+        FROM inventory
+        """
+    )
 
     products = cursor.fetchall()
 
@@ -106,6 +135,33 @@ def deduct_stock(product_id, quantity):
     conn.close()
 
     return True, "Stock updated successfully"
+
+
+def update_product_embedding(product_id, embedding, image_path=None):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    if image_path is not None:
+        cursor.execute(
+            """
+            UPDATE inventory
+            SET embedding = ?, image_path = ?
+            WHERE id = ?
+            """,
+            (embedding, image_path, product_id)
+        )
+    else:
+        cursor.execute(
+            """
+            UPDATE inventory
+            SET embedding = ?
+            WHERE id = ?
+            """,
+            (embedding, product_id)
+        )
+
+    conn.commit()
+    conn.close()
 
 
 create_database()
