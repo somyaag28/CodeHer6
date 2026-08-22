@@ -5,6 +5,9 @@ from ai_model import extract_embedding
 from database.inventory import get_all_products
 
 
+MATCH_THRESHOLD = 0.75
+
+
 def cosine_similarity(vector_a, vector_b):
     """
     Measures how similar two image embeddings are.
@@ -31,14 +34,14 @@ def cosine_similarity(vector_a, vector_b):
 
 def match_image(image_path):
     """
-    Takes a customer/product image and finds the
-    closest product registered by the retailer.
+    Takes a product image and finds the closest
+    registered product.
     """
 
-    # Create embedding for the new image
+    # Create embedding for scanned image
     new_embedding = extract_embedding(image_path)
 
-    # Get all products registered by the retailer
+    # Get registered products
     products = get_all_products()
 
     best_product = None
@@ -51,24 +54,24 @@ def match_image(image_path):
         price = product[2]
         stock = product[3]
         gst_rate = product[4]
-        image_path_saved = product[5]
         embedding_text = product[6]
 
-        # Skip products that don't have an embedding
+        # Skip products without an embedding
         if embedding_text is None:
             continue
 
-        # Convert saved text back into a Python list
+        # Convert saved JSON back to Python list
         saved_embedding = json.loads(embedding_text)
 
-        # Compare the two embeddings
+        # Compare embeddings
         similarity = cosine_similarity(
             new_embedding,
             saved_embedding
         )
 
-        # Keep the best match
+        # Keep best match
         if similarity > best_similarity:
+
             best_similarity = similarity
 
             best_product = {
@@ -77,13 +80,20 @@ def match_image(image_path):
                 "price": price,
                 "stock": stock,
                 "gst_rate": gst_rate,
-                "similarity": similarity
+                "similarity": round(similarity, 4)
             }
 
-    # Nothing matched
+    # No products have embeddings
     if best_product is None:
         return {
             "message": "No matching product found"
+        }
+
+    # Reject weak matches
+    if best_similarity < MATCH_THRESHOLD:
+        return {
+            "message": "Product not recognized",
+            "similarity": round(best_similarity, 4)
         }
 
     return best_product
