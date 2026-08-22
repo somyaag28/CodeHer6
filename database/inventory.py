@@ -1,5 +1,6 @@
 import sqlite3
 
+
 DATABASE = "inventory.db"
 
 
@@ -19,6 +20,7 @@ def create_database():
     conn.commit()
     conn.close()
 
+
 def add_product(product_id, name, price, stock):
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
@@ -33,7 +35,9 @@ def add_product(product_id, name, price, stock):
 
     conn.commit()
     conn.close()
-    def get_product(product_id):
+
+
+def get_product(product_id):
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
@@ -47,7 +51,9 @@ def add_product(product_id, name, price, stock):
     conn.close()
 
     return product
-    def get_all_products():
+
+
+def get_all_products():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
@@ -58,7 +64,9 @@ def add_product(product_id, name, price, stock):
     conn.close()
 
     return products
-    def deduct_stock(product_id, quantity):
+
+
+def deduct_stock(product_id, quantity):
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
 
@@ -98,4 +106,6 @@ def add_product(product_id, name, price, stock):
     conn.close()
 
     return True, "Stock updated successfully"
+
+
 create_database()
