@@ -173,6 +173,6 @@ def generate_bill(
         "payment_method": payment_method,
         "amount_paid": amount_paid,
         "change": change,
-        "receipt": receipt
+        "receipt": receipt,
         "pdf_path": pdf_path
     }
