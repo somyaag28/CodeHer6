@@ -1,85 +1,80 @@
 import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 
 
-def cosine_similarity(vector1, vector2):
+def find_best_match(
+    query_embedding,
+    product_embeddings,
+    threshold=0.75
+):
     """
-    Calculate cosine similarity between two feature vectors.
-    """
+    Finds the closest registered product to a new
+    product image embedding.
 
-    vector1 = np.array(vector1, dtype=np.float32)
-    vector2 = np.array(vector2, dtype=np.float32)
+    product_embeddings format:
 
-    norm1 = np.linalg.norm(vector1)
-    norm2 = np.linalg.norm(vector2)
-
-    if norm1 == 0 or norm2 == 0:
-        return 0.0
-
-    return float(
-        np.dot(vector1, vector2) / (norm1 * norm2)
-    )
-
-
-def find_top_matches(new_vector, saved_vectors, top_k=3):
-    """
-    Compare a new feature vector with saved product vectors.
-
-    Parameters:
-        new_vector:
-            Feature vector extracted from a new product image.
-
-        saved_vectors:
-            Dictionary containing product names and feature vectors.
-
-        top_k:
-            Number of matches to return.
+    {
+        101: [embedding1, embedding2],
+        102: [embedding1],
+        103: [embedding1, embedding2]
+    }
 
     Returns:
-        List of products sorted by similarity.
+
+    {
+        "product_id": 101,
+        "similarity": 0.92
+    }
+
+    or, if no sufficiently good match exists:
+
+    {
+        "product_id": None,
+        "similarity": 0.42
+    }
     """
 
-    results = []
+    query_embedding = np.asarray(
+        query_embedding,
+        dtype=np.float32
+    ).reshape(1, -1)
 
-    for product_name, saved_vector in saved_vectors.items():
+    best_product_id = None
+    best_similarity = -1.0
 
-        score = cosine_similarity(
-            new_vector,
-            saved_vector
-        )
+    for product_id, embeddings in product_embeddings.items():
 
-        results.append({
-            "product": product_name,
-            "similarity": round(score, 4)
-        })
+        # Allow one embedding or multiple embeddings
+        if isinstance(embeddings, np.ndarray):
+            embeddings = [embeddings]
 
-    results.sort(
-        key=lambda x: x["similarity"],
-        reverse=True
-    )
+        elif not isinstance(embeddings, list):
+            embeddings = [embeddings]
 
-    return results[:top_k]
+        for stored_embedding in embeddings:
 
+            stored_embedding = np.asarray(
+                stored_embedding,
+                dtype=np.float32
+            ).reshape(1, -1)
 
-def find_best_match(new_vector, saved_vectors, threshold=0.70):
-    """
-    Return the best matching product.
+            similarity = cosine_similarity(
+                query_embedding,
+                stored_embedding
+            )[0][0]
 
-    If the similarity is below the threshold,
-    return None.
-    """
+            if similarity > best_similarity:
+                best_similarity = float(similarity)
+                best_product_id = product_id
 
-    matches = find_top_matches(
-        new_vector,
-        saved_vectors,
-        top_k=1
-    )
+    # Reject weak matches
+    if best_similarity < threshold:
+        return {
+            "product_id": None,
+            "similarity": best_similarity
+        }
 
-    if not matches:
-        return None
-
-    best_match = matches[0]
-
-    if best_match["similarity"] < threshold:
-        return None
-
-    return best_match
+    return {
+        "product_id": best_product_id,
+        "similarity": best_similarity
+    }
