@@ -1,68 +1,57 @@
-from vision_matcher import find_top_matches, find_best_match
+from vision_matcher import find_best_match
 
 
-# Dummy saved product vectors
-saved_vectors = {
+# Dummy embeddings representing retailer-registered products
 
-    "Maggi": [
-        0.20,
-        0.40,
-        0.10,
-        0.70
-    ],
+maggi_1 = [1.0, 0.0, 0.0, 0.0]
+maggi_2 = [0.98, 0.02, 0.0, 0.0]
 
-    "Parle-G": [
-        0.80,
-        0.10,
-        0.30,
-        0.20
-    ],
+coke_1 = [0.0, 1.0, 0.0, 0.0]
 
-    "Coca-Cola": [
-        0.10,
-        0.90,
-        0.20,
-        0.30
-    ]
+
+# Simulated product embeddings from the database
+
+product_embeddings = {
+    101: [maggi_1, maggi_2],
+    102: [coke_1]
 }
 
 
-# Dummy feature vector of a new product
-new_vector = [
-    0.21,
-    0.39,
-    0.12,
-    0.69
+# Customer scans Maggi
+
+customer_embedding = [
+    0.99,
+    0.01,
+    0.0,
+    0.0
 ]
 
 
-print("TOP MATCHES")
-print("-----------")
-
-matches = find_top_matches(
-    new_vector,
-    saved_vectors,
-    top_k=3
+result = find_best_match(
+    customer_embedding,
+    product_embeddings,
+    threshold=0.75
 )
 
-for match in matches:
-    print(
-        match["product"],
-        "->",
-        match["similarity"]
-    )
+print("Maggi test:")
+print(result)
 
 
-print("\nBEST MATCH")
-print("----------")
+# Customer scans an unknown product
 
-best = find_best_match(
-    new_vector,
-    saved_vectors
+unknown_embedding = [
+    0.0,
+    0.0,
+    1.0,
+    0.0
+]
+
+
+unknown_result = find_best_match(
+    unknown_embedding,
+    product_embeddings,
+    threshold=0.75
 )
 
-if best:
-    print("Product:", best["product"])
-    print("Similarity:", best["similarity"])
-else:
-    print("No reliable match found.")
+print("\nUnknown product test:")
+print(unknown_result)
