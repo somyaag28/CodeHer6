@@ -19,7 +19,7 @@ def generate_bill_number():
     bill_counter += 1
 
     return bill_number
-  def calculate_subtotal(items):
+    def calculate_subtotal(items):
 
     subtotal = 0
 
