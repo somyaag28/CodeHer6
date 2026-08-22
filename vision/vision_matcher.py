@@ -16,7 +16,7 @@ def find_best_match(
     {
         101: [embedding1, embedding2],
         102: [embedding1],
-        103: [embedding1, embedding2]
+        103: [embedding1, embedding2, embedding3]
     }
 
     Returns:
@@ -26,7 +26,7 @@ def find_best_match(
         "similarity": 0.92
     }
 
-    or, if no sufficiently good match exists:
+    If no sufficiently good match exists:
 
     {
         "product_id": None,
@@ -34,6 +34,7 @@ def find_best_match(
     }
     """
 
+    # Convert query embedding to NumPy array
     query_embedding = np.asarray(
         query_embedding,
         dtype=np.float32
@@ -42,15 +43,17 @@ def find_best_match(
     best_product_id = None
     best_similarity = -1.0
 
+    # Compare against every registered product
     for product_id, embeddings in product_embeddings.items():
 
-        # Allow one embedding or multiple embeddings
+        # Allow a single embedding or multiple embeddings
         if isinstance(embeddings, np.ndarray):
             embeddings = [embeddings]
 
         elif not isinstance(embeddings, list):
             embeddings = [embeddings]
 
+        # Compare query with every reference image
         for stored_embedding in embeddings:
 
             stored_embedding = np.asarray(
