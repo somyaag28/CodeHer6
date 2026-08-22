@@ -33,4 +33,18 @@ def add_product(product_id, name, price, stock):
 
     conn.commit()
     conn.close()
+    def get_product(product_id):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT * FROM inventory WHERE id = ?",
+        (product_id,)
+    )
+
+    product = cursor.fetchone()
+
+    conn.close()
+
+    return product
 create_database()
