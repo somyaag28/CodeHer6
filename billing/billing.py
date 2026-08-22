@@ -27,7 +27,7 @@ def generate_bill_number():
         subtotal += item["price"] * item["quantity"]
 
     return subtotal
-    def calculate_discount(subtotal, discount_type=None, discount_value=0):
+def calculate_discount(subtotal, discount_type=None, discount_value=0):
 
     if discount_type == "percentage":
 
@@ -42,7 +42,7 @@ def generate_bill_number():
         discount = 0
 
     return discount
-    def calculate_gst(items, taxable_ratio, gst_registered):
+def calculate_gst(items, taxable_ratio, gst_registered):
 
     if not gst_registered:
         return 0
@@ -60,7 +60,7 @@ def generate_bill_number():
         total_gst += taxable_amount * gst_rate / 100
 
     return total_gst
-    def process_payment(total, payment_method, amount_paid):
+def process_payment(total, payment_method, amount_paid):
 
     valid_methods = ["Cash", "UPI", "Card"]
 
@@ -72,7 +72,7 @@ def generate_bill_number():
     validate_payment(total, amount_paid)
 
     return amount_paid - total
-    def generate_bill(
+def generate_bill(
     items,
     shop,
     discount_type=None,
