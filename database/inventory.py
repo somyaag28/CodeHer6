@@ -58,4 +58,44 @@ def add_product(product_id, name, price, stock):
     conn.close()
 
     return products
+    def deduct_stock(product_id, quantity):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT stock FROM inventory WHERE id = ?",
+        (product_id,)
+    )
+
+    result = cursor.fetchone()
+
+    if result is None:
+        conn.close()
+        return False, "Product not found"
+
+    current_stock = result[0]
+
+    if quantity <= 0:
+        conn.close()
+        return False, "Invalid quantity"
+
+    if quantity > current_stock:
+        conn.close()
+        return False, "Not enough stock"
+
+    new_stock = current_stock - quantity
+
+    cursor.execute(
+        """
+        UPDATE inventory
+        SET stock = ?
+        WHERE id = ?
+        """,
+        (new_stock, product_id)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return True, "Stock updated successfully"
 create_database()
