@@ -10,7 +10,7 @@ from receipt import (
     generate_receipt,
     generate_pdf_receipt
 )
-
+bill_counter = 1
 
 def generate_bill_number():
 
