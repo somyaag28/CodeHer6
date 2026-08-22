@@ -47,4 +47,15 @@ def add_product(product_id, name, price, stock):
     conn.close()
 
     return product
+    def get_all_products():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM inventory")
+
+    products = cursor.fetchall()
+
+    conn.close()
+
+    return products
 create_database()
