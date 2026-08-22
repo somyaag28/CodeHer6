@@ -35,3 +35,4 @@ bill = generate_bill(
 )
 
 print(bill["receipt"])
+print("PDF saved at:", bill["pdf_path"])
