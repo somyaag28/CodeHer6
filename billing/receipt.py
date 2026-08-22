@@ -13,9 +13,17 @@ from reportlab.lib.units import mm
 # FONT SETUP
 # =================================================
 
-# DejaVu Sans supports the ₹ symbol.
-font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-bold_font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+font_path = os.path.join(
+    os.path.dirname(__file__),
+    "fonts",
+    "DejaVuSans.ttf"
+)
+
+bold_font_path = os.path.join(
+    os.path.dirname(__file__),
+    "fonts",
+    "DejaVuSans-Bold.ttf"
+)
 
 pdfmetrics.registerFont(
     TTFont("DejaVu", font_path)
@@ -356,7 +364,7 @@ def generate_pdf_receipt(
     )
 
     pdf.drawRightString(
-        left + 145 * mm,
+        left + 140 * mm,
         y - 4 * mm,
         "RATE (₹)"
     )
