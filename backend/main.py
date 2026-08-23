@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware # NEW: Import CORS
 from backend.matching import match_image
 from billing.billing import generate_bill
 from database.inventory import (
@@ -12,10 +13,24 @@ from ai_model import extract_embedding
 import json
 import os
 
-
 app = FastAPI()
 
+# NEW: Allow frontend to communicate with backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+@app.get("/")
+def home():
+    return {
+        "message": "CodeHer6 API is running"
+    }
+
+# Keep your @app.post("/identify"), @app.post("/products"), and @app.post("/checkout") exactly as they are below this!
 @app.get("/")
 def home():
     return {

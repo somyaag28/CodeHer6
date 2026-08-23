@@ -1,0 +1,312 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background: #f7f8fc;
+  color: #171923;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.app {
+  min-height: 100vh;
+}
+
+/* Navbar */
+
+.navbar {
+  height: 72px;
+  padding: 0 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-bottom: 1px solid #e8e9ef;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.logo-mark {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #6c4cff;
+  color: white;
+}
+
+.navbar nav {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-item {
+  border: none;
+  background: transparent;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #626675;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  background: #f0edff;
+  color: #6045e8;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #5e6472;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+/* Main */
+
+.main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 32px;
+}
+
+/* Hero */
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: #6c4cff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(42px, 6vw, 68px);
+  line-height: 1;
+  letter-spacing: -3px;
+}
+
+.hero h1 span {
+  color: #6c4cff;
+}
+
+.subtitle {
+  max-width: 600px;
+  margin: 24px 0;
+  color: #656a78;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.primary-button,
+.secondary-button,
+.scan-button {
+  border-radius: 10px;
+  padding: 13px 20px;
+  font-weight: 700;
+}
+
+.primary-button,
+.scan-button {
+  border: none;
+  background: #6c4cff;
+  color: white;
+}
+
+.primary-button:hover,
+.scan-button:hover {
+  background: #593be0;
+}
+
+.secondary-button {
+  border: 1px solid #dfe1e8;
+  background: white;
+  color: #303442;
+}
+
+/* Scanner */
+
+.scanner-card {
+  padding: 36px;
+  border-radius: 22px;
+  background: #171923;
+  color: white;
+  box-shadow: 0 20px 50px rgba(20, 20, 35, 0.12);
+}
+
+.scanner-icon {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 24px;
+  border-radius: 16px;
+  background: #2a2d3a;
+  color: #a998ff;
+  font-size: 32px;
+}
+
+.scanner-card h2 {
+  margin: 0 0 12px;
+  font-size: 25px;
+}
+
+.scanner-card p {
+  margin: 0 0 24px;
+  color: #b9bcc7;
+  line-height: 1.6;
+}
+
+/* Stats */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 60px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px;
+  background: white;
+  border: 1px solid #e8e9ef;
+  border-radius: 16px;
+}
+
+.stat-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #f0edff;
+}
+
+.stat-card p {
+  margin: 0 0 5px;
+  color: #777c89;
+  font-size: 13px;
+}
+
+.stat-card h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+/* Workflow */
+
+.workflow {
+  margin-top: 70px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.workflow-card {
+  padding: 28px;
+  background: white;
+  border: 1px solid #e8e9ef;
+  border-radius: 16px;
+}
+
+.workflow-card > span {
+  color: #6c4cff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.workflow-card h3 {
+  margin: 18px 0 8px;
+  font-size: 20px;
+}
+
+.workflow-card p {
+  margin: 0;
+  color: #707582;
+  line-height: 1.6;
+}
+
+/* Responsive */
+
+@media (max-width: 850px) {
+  .navbar {
+    padding: 0 20px;
+  }
+
+  .navbar nav {
+    display: none;
+  }
+
+  .main {
+    padding: 36px 20px;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .workflow-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 500px) {
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+  }
+}
