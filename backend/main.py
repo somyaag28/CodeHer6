@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Form
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -8,7 +9,8 @@ from database.inventory import (
     add_product,
     get_product,
     get_all_products,
-    deduct_stock
+    deduct_stock,
+    delete_product
 )
 from ai_model import extract_embedding
 
@@ -155,6 +157,44 @@ def inventory():
 
     return result
 
+# =================================================
+# DELETE PRODUCT
+# =================================================
+
+@app.delete("/products/{product_id}")
+def delete_product_endpoint(product_id: int):
+
+    product = get_product(product_id)
+
+    if product is None:
+        return {
+            "error": "Product not found"
+        }
+
+    success, message = delete_product(product_id)
+
+    if not success:
+        return {
+            "error": message
+        }
+
+    return {
+        "message": "Product deleted successfully",
+        "product_id": product_id
+    }
+
+# =================================================
+# CART CHECKOUT MODELS
+# =================================================
+
+class CartItem(BaseModel):
+    product_id: int
+    quantity: int
+
+
+class CheckoutRequest(BaseModel):
+    items: list[CartItem]
+    payment_method: str = "Cash"
 
 # =================================================
 # CHECKOUT
@@ -269,4 +309,109 @@ def checkout(
         "pdf_url": pdf_url,
 
         "stock_update": message
+    }
+# =================================================
+# MULTI-ITEM CART CHECKOUT
+# =================================================
+
+@app.post("/checkout/cart")
+def checkout_cart(order: CheckoutRequest):
+
+    items = []
+    products_to_deduct = []
+
+    # ---------------------------------------------
+    # CHECK EVERY PRODUCT
+    # ---------------------------------------------
+
+    for entry in order.items:
+
+        product = get_product(entry.product_id)
+
+        if product is None:
+            return {
+                "error": f"Product {entry.product_id} not found"
+            }
+
+        name = product[1]
+        price = product[2]
+        stock = product[3]
+        gst_rate = product[4]
+
+        if entry.quantity <= 0:
+            return {
+                "error": f"Invalid quantity for {name}"
+            }
+
+        if entry.quantity > stock:
+            return {
+                "error": f"Not enough stock for {name}"
+            }
+
+        items.append({
+            "name": name,
+            "price": price,
+            "quantity": entry.quantity,
+            "gst_rate": gst_rate
+        })
+
+        products_to_deduct.append({
+            "product_id": entry.product_id,
+            "quantity": entry.quantity
+        })
+
+    # ---------------------------------------------
+    # SHOP DETAILS
+    # ---------------------------------------------
+
+    shop = {
+        "name": "CodeHer6 Store",
+        "gst_registered": True,
+        "gstin": "TEST123"
+    }
+
+    # ---------------------------------------------
+    # GENERATE REAL BILL
+    # ---------------------------------------------
+
+    bill = generate_bill(
+        items,
+        shop,
+        payment_method=order.payment_method
+    )
+
+    # ---------------------------------------------
+    # DEDUCT STOCK
+    # ---------------------------------------------
+
+    for item in products_to_deduct:
+
+        success, message = deduct_stock(
+            item["product_id"],
+            item["quantity"]
+        )
+
+        if not success:
+            return {
+                "error": message
+            }
+
+    # ---------------------------------------------
+    # CREATE PDF URL
+    # ---------------------------------------------
+
+    pdf_filename = os.path.basename(
+        bill["pdf_path"]
+    )
+
+    pdf_url = f"/receipts/{pdf_filename}"
+
+    # ---------------------------------------------
+    # RETURN RESULT
+    # ---------------------------------------------
+
+    return {
+        "message": "Checkout successful",
+        "bill": bill,
+        "pdf_url": pdf_url
     }

@@ -162,6 +162,28 @@ def update_product_embedding(product_id, embedding, image_path=None):
 
     conn.commit()
     conn.close()
+# =================================================
+# DELETE PRODUCT
+# =================================================
 
+def delete_product(product_id):
+
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "DELETE FROM inventory WHERE id = ?",
+        (product_id,)
+    )
+
+    conn.commit()
+
+    if cursor.rowcount == 0:
+        conn.close()
+        return False, "Product not found"
+
+    conn.close()
+
+    return True, "Product deleted successfully"
 
 create_database()
