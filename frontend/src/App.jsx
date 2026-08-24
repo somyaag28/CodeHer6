@@ -73,16 +73,58 @@ function App() {
   }, []);
 
   // =========================
+  // CLEAN UP CAMERA
+  // =========================
+
+  useEffect(() => {
+    if (videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+    }
+  }, [cameraStream]);
+
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => {
+          track.stop();
+        });
+      }
+    };
+  }, [cameraStream]);
+
+  // =========================
   // IMAGE SELECTION
   // =========================
 
   const handleImageChange = (event) => {
-    const file = event.target.files[0];
+    const file = event.target.files?.[0];
 
     if (!file) return;
 
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+
+    const newPreview = URL.createObjectURL(file);
+
     setImage(file);
-    setPreview(URL.createObjectURL(file));
+    setPreview(newPreview);
+    setIdentifiedProduct(null);
+    setError("");
+    setMessage("");
+  };
+
+  // =========================
+  // CLEAR IMAGE
+  // =========================
+
+  const clearSelectedImage = () => {
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+
+    setImage(null);
+    setPreview(null);
     setIdentifiedProduct(null);
     setError("");
     setMessage("");
@@ -97,33 +139,44 @@ function App() {
       setError("");
       setMessage("");
 
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error(
+          "Camera access is not supported by this browser."
+        );
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: "environment",
+          facingMode: {
+            ideal: "environment",
+          },
+          width: {
+            ideal: 1280,
+          },
+          height: {
+            ideal: 720,
+          },
         },
         audio: false,
       });
 
       setCameraStream(stream);
       setCameraOpen(true);
-
-      setTimeout(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      }, 100);
     } catch (err) {
       console.error(err);
 
       setError(
-        "Could not access the camera. Please allow camera permission."
+        err.message ||
+          "Could not access the camera. Please allow camera permission."
       );
     }
   };
 
   const stopCamera = () => {
     if (cameraStream) {
-      cameraStream.getTracks().forEach((track) => track.stop());
+      cameraStream.getTracks().forEach((track) => {
+        track.stop();
+      });
     }
 
     setCameraStream(null);
@@ -135,6 +188,11 @@ function App() {
 
     const video = videoRef.current;
 
+    if (!video.videoWidth || !video.videoHeight) {
+      setError("Camera is still starting. Please try again.");
+      return;
+    }
+
     const canvas = document.createElement("canvas");
 
     canvas.width = video.videoWidth;
@@ -142,7 +200,10 @@ function App() {
 
     const context = canvas.getContext("2d");
 
-    if (!context) return;
+    if (!context) {
+      setError("Could not capture the image.");
+      return;
+    }
 
     context.drawImage(
       video,
@@ -154,7 +215,10 @@ function App() {
 
     canvas.toBlob(
       (blob) => {
-        if (!blob) return;
+        if (!blob) {
+          setError("Could not create the captured image.");
+          return;
+        }
 
         const capturedFile = new File(
           [blob],
@@ -164,11 +228,17 @@ function App() {
           }
         );
 
+        if (preview) {
+          URL.revokeObjectURL(preview);
+        }
+
+        const newPreview = URL.createObjectURL(capturedFile);
+
         setImage(capturedFile);
-        setPreview(URL.createObjectURL(capturedFile));
+        setPreview(newPreview);
         setIdentifiedProduct(null);
         setError("");
-        setMessage("");
+        setMessage("Photo captured successfully.");
 
         stopCamera();
       },
@@ -259,7 +329,7 @@ function App() {
         {
           product_id: product.product_id,
           name: product.name,
-          price: product.price,
+          price: Number(product.price),
           quantity: 1,
         },
       ];
@@ -302,7 +372,7 @@ function App() {
   const cartTotal = cart.reduce(
     (total, item) =>
       total +
-      item.price * item.quantity,
+      Number(item.price) * item.quantity,
     0
   );
 
@@ -326,8 +396,7 @@ function App() {
         {
           method: "POST",
           headers: {
-            "Content-Type":
-              "application/json",
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             items: cart.map((item) => ({
@@ -405,12 +474,14 @@ function App() {
         );
       }
 
+      const deletedName = productToDelete.name;
+
       setProductToDelete(null);
 
       await loadInventory();
 
       setMessage(
-        `${productToDelete.name} was deleted from inventory.`
+        `${deletedName} was deleted from inventory.`
       );
     } catch (err) {
       console.error(err);
@@ -436,15 +507,27 @@ function App() {
   };
 
   // =========================
+  // NAVIGATION HELPER
+  // =========================
+
+  const navigateTo = (nextPage) => {
+    setPage(nextPage);
+    setError("");
+    setMessage("");
+
+    if (nextPage === "inventory") {
+      loadInventory();
+    }
+  };
+
+  // =========================
   // MAIN RETURN
   // =========================
 
   return (
     <div className="app">
 
-      {/* =========================
-          SIDEBAR
-      ========================= */}
+      {/* SIDEBAR */}
 
       <aside className="sidebar">
 
@@ -487,13 +570,10 @@ function App() {
                 ? "nav-button active"
                 : "nav-button"
             }
-            onClick={() => {
-              setPage("home");
-              setError("");
-              setMessage("");
-            }}
+            onClick={() => navigateTo("home")}
           >
-            🏠 Home
+            <span>🏠</span>
+            Home
           </button>
 
           <button
@@ -502,13 +582,10 @@ function App() {
                 ? "nav-button active"
                 : "nav-button"
             }
-            onClick={() => {
-              setPage("add");
-              setError("");
-              setMessage("");
-            }}
+            onClick={() => navigateTo("add")}
           >
-            ➕ Add Product
+            <span>➕</span>
+            Add Product
           </button>
 
           <button
@@ -517,14 +594,12 @@ function App() {
                 ? "nav-button active"
                 : "nav-button"
             }
-            onClick={() => {
-              setPage("inventory");
-              loadInventory();
-              setError("");
-              setMessage("");
-            }}
+            onClick={() =>
+              navigateTo("inventory")
+            }
           >
-            📦 Inventory Hub
+            <span>📦</span>
+            Inventory Hub
           </button>
 
           <button
@@ -533,22 +608,19 @@ function App() {
                 ? "nav-button active"
                 : "nav-button"
             }
-            onClick={() => {
-              setPage("checkout");
-              setError("");
-              setMessage("");
-            }}
+            onClick={() =>
+              navigateTo("checkout")
+            }
           >
-            🛒 Checkout
+            <span>🛒</span>
+            Checkout
           </button>
 
         </nav>
 
       </aside>
 
-      {/* =========================
-          MAIN AREA
-      ========================= */}
+      {/* MAIN AREA */}
 
       <main className="main">
 
@@ -573,25 +645,23 @@ function App() {
 
         <div className="content">
 
-          {/* =========================
-              MESSAGES
-          ========================= */}
+          {/* MESSAGES */}
 
           {error && (
             <div className="error-message">
+              <span>⚠️</span>
               {error}
             </div>
           )}
 
           {message && (
             <div className="success-message">
+              <span>✓</span>
               {message}
             </div>
           )}
 
-          {/* =========================
-              HOME
-          ========================= */}
+          {/* HOME */}
 
           {page === "home" && (
 
@@ -627,16 +697,13 @@ function App() {
 
               <div className="two-column">
 
-                {/* =========================
-                    SCANNER
-                ========================= */}
+                {/* SCANNER */}
 
-                <section className="card">
+                <section className="card scanner-card">
 
                   <div className="card-header">
 
                     <div>
-
                       <p className="small-label">
                         STEP 1
                       </p>
@@ -644,29 +711,52 @@ function App() {
                       <h2>
                         Identify Product
                       </h2>
-
                     </div>
+
+                    {cameraOpen && (
+                      <span className="camera-live-badge">
+                        <span></span>
+                        Camera Live
+                      </span>
+                    )}
 
                   </div>
 
-                  {/* CAMERA OPEN */}
+                  {/* CAMERA */}
 
                   {cameraOpen ? (
 
                     <div className="camera-box">
 
-                      <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        className="camera-preview"
-                      />
+                      <div className="camera-viewport">
+
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="camera-preview"
+                        />
+
+                        <div className="camera-frame">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+
+                        <div className="camera-label">
+                          Position product inside
+                          the frame
+                        </div>
+
+                      </div>
 
                       <div className="camera-controls">
 
                         <button
                           type="button"
-                          className="primary-button"
+                          className="primary-button camera-capture-button"
                           onClick={
                             capturePhoto
                           }
@@ -676,7 +766,7 @@ function App() {
 
                         <button
                           type="button"
-                          className="secondary-button"
+                          className="secondary-button camera-close-button"
                           onClick={
                             stopCamera
                           }
@@ -690,31 +780,29 @@ function App() {
 
                   ) : preview ? (
 
-                    /* =========================
-                       IMAGE SELECTED
-                    ========================= */
+                    /* IMAGE SELECTED */
 
                     <div className="selected-image">
 
-                      <img
-                        src={preview}
-                        alt="Selected product"
-                      />
+                      <div className="image-preview-container">
+
+                        <img
+                          src={preview}
+                          alt="Selected product"
+                        />
+
+                      </div>
 
                       <div className="image-actions">
 
                         <button
                           type="button"
                           className="secondary-button"
-                          onClick={() => {
-                            setPreview(null);
-                            setImage(null);
-                            setIdentifiedProduct(null);
-                            setError("");
-                            setMessage("");
-                          }}
+                          onClick={
+                            clearSelectedImage
+                          }
                         >
-                          Choose Another Photo
+                          ↻ Choose Another
                         </button>
 
                         <button
@@ -733,9 +821,7 @@ function App() {
 
                   ) : (
 
-                    /* =========================
-                       UPLOAD OPTIONS
-                    ========================= */
+                    /* UPLOAD OPTIONS */
 
                     <div className="upload-options">
 
@@ -793,7 +879,7 @@ function App() {
                   )}
 
                   <button
-                    className="primary-button"
+                    className="primary-button identify-button"
                     onClick={
                       identifyProduct
                     }
@@ -802,38 +888,52 @@ function App() {
                     }
                   >
                     {loading
-                      ? "Identifying..."
-                      : "Identify Product"}
+                      ? "⏳ Identifying..."
+                      : "🔍 Identify Product"}
                   </button>
 
                 </section>
 
-                {/* =========================
-                    IDENTIFIED PRODUCT
-                ========================= */}
+                {/* IDENTIFIED PRODUCT */}
 
-                <section className="card">
+                <section className="card result-card">
 
-                  <p className="small-label">
-                    STEP 2
-                  </p>
+                  <div className="card-header">
 
-                  <h2>
-                    Product Result
-                  </h2>
+                    <div>
+                      <p className="small-label">
+                        STEP 2
+                      </p>
+
+                      <h2>
+                        Product Result
+                      </h2>
+                    </div>
+
+                    {identifiedProduct && (
+                      <span className="identified-badge">
+                        ✓ Identified
+                      </span>
+                    )}
+
+                  </div>
 
                   {!identifiedProduct ? (
 
-                    <div className="empty-state">
+                    <div className="empty-state result-empty">
 
-                      <div>
+                      <div className="empty-icon">
                         🔍
                       </div>
 
+                      <strong>
+                        Waiting for identification
+                      </strong>
+
                       <p>
-                        Identified product
-                        details will appear
-                        here.
+                        Identify a product using
+                        the camera or upload an
+                        image to see its details.
                       </p>
 
                     </div>
@@ -842,43 +942,55 @@ function App() {
 
                     <div className="product-result">
 
-                      <h3>
-                        {identifiedProduct.name}
-                      </h3>
+                      <div className="product-result-heading">
+
+                        <div className="product-result-icon">
+                          📦
+                        </div>
+
+                        <div>
+                          <span>
+                            MATCHED PRODUCT
+                          </span>
+
+                          <h3>
+                            {identifiedProduct.name}
+                          </h3>
+                        </div>
+
+                      </div>
 
                       <div className="details-grid">
 
                         <div>
-
                           <span>
                             Product ID
                           </span>
 
                           <strong>
+                            #
                             {
                               identifiedProduct.product_id
                             }
                           </strong>
-
                         </div>
 
                         <div>
-
                           <span>
                             Price
                           </span>
 
                           <strong>
                             ₹
-                            {
+                            {Number(
                               identifiedProduct.price
-                            }
+                            ).toLocaleString(
+                              "en-IN"
+                            )}
                           </strong>
-
                         </div>
 
                         <div>
-
                           <span>
                             Stock
                           </span>
@@ -886,13 +998,12 @@ function App() {
                           <strong>
                             {
                               identifiedProduct.stock
-                            }
+                            }{" "}
+                            units
                           </strong>
-
                         </div>
 
                         <div>
-
                           <span>
                             GST
                           </span>
@@ -902,20 +1013,31 @@ function App() {
                               identifiedProduct.gst_rate
                             }%
                           </strong>
-
                         </div>
 
                       </div>
 
                       <button
-                        className="primary-button"
+                        className="primary-button add-cart-button"
                         onClick={() =>
                           addToCart(
                             identifiedProduct
                           )
                         }
                       >
-                        Add to Cart
+                        🛒 Add to Cart
+                      </button>
+
+                      <button
+                        className="result-checkout-link"
+                        onClick={() =>
+                          setPage("checkout")
+                        }
+                      >
+                        View Cart
+                        {cart.length > 0 &&
+                          ` (${cart.length})`}
+                        →
                       </button>
 
                     </div>
@@ -930,9 +1052,7 @@ function App() {
 
           )}
 
-          {/* =========================
-              ADD PRODUCT
-          ========================= */}
+          {/* ADD PRODUCT */}
 
           {page === "add" && (
 
@@ -944,9 +1064,7 @@ function App() {
 
           )}
 
-          {/* =========================
-              INVENTORY
-          ========================= */}
+          {/* INVENTORY */}
 
           {page === "inventory" && (
 
@@ -960,9 +1078,7 @@ function App() {
 
           )}
 
-          {/* =========================
-              CHECKOUT
-          ========================= */}
+          {/* CHECKOUT */}
 
           {page === "checkout" && (
 
@@ -995,12 +1111,17 @@ function App() {
 
                 <div className="empty-state">
 
-                  <div>
+                  <div className="empty-icon">
                     🛒
                   </div>
 
+                  <strong>
+                    Your cart is empty
+                  </strong>
+
                   <p>
-                    Your cart is empty.
+                    Scan or identify products
+                    to start building your order.
                   </p>
 
                   <button
@@ -1029,7 +1150,7 @@ function App() {
                         }
                       >
 
-                        <div>
+                        <div className="cart-product-info">
 
                           <strong>
                             {item.name}
@@ -1037,7 +1158,11 @@ function App() {
 
                           <span>
                             ₹
-                            {item.price}
+                            {Number(
+                              item.price
+                            ).toLocaleString(
+                              "en-IN"
+                            )}
                             {" "}each
                           </span>
 
@@ -1073,10 +1198,10 @@ function App() {
 
                         </div>
 
-                        <strong>
+                        <strong className="cart-item-total">
                           ₹
                           {(
-                            item.price *
+                            Number(item.price) *
                             item.quantity
                           ).toLocaleString(
                             "en-IN"
@@ -1094,7 +1219,7 @@ function App() {
                     <div>
 
                       <span>
-                        Total
+                        Total Amount
                       </span>
 
                       <strong>
@@ -1112,8 +1237,8 @@ function App() {
                       disabled={loading}
                     >
                       {loading
-                        ? "Processing..."
-                        : "Checkout & Generate Bill"}
+                        ? "⏳ Processing..."
+                        : "✓ Checkout & Generate Bill"}
                     </button>
 
                   </div>
@@ -1130,42 +1255,76 @@ function App() {
 
       </main>
 
-      {/* =========================
-          DELETE CONFIRMATION MODAL
-      ========================= */}
+      {/* DELETE CONFIRMATION MODAL */}
 
       {productToDelete && (
 
-        <div className="modal-overlay">
+        <div
+          className="modal-overlay"
+          onClick={() => {
+            if (!deleting) {
+              setProductToDelete(null);
+            }
+          }}
+        >
 
-          <div className="delete-modal">
+          <div
+            className="delete-modal"
+            onClick={(event) =>
+              event.stopPropagation()
+            }
+          >
 
-            <div className="delete-modal-icon">
-              ⚠️
+            <div className="delete-modal-top">
+
+              <div className="delete-modal-icon">
+                🗑️
+              </div>
+
+              <div>
+                <p className="small-label">
+                  INVENTORY ACTION
+                </p>
+
+                <h2>
+                  Delete Product?
+                </h2>
+              </div>
+
             </div>
 
-            <h2>
-              Delete Product?
-            </h2>
+            <div className="delete-product-preview">
 
-            <p>
-              Are you sure you want to
-              delete{" "}
-              <strong>
-                {productToDelete.name}
-              </strong>{" "}
-              from your inventory?
+              <div className="delete-product-icon">
+                📦
+              </div>
+
+              <div>
+                <strong>
+                  {productToDelete.name}
+                </strong>
+
+                <span>
+                  Product #{productToDelete.id}
+                </span>
+              </div>
+
+            </div>
+
+            <p className="delete-modal-text">
+              This product will be permanently
+              removed from your inventory database.
             </p>
 
             <p className="delete-warning">
-              This action cannot be undone.
+              ⚠ This action cannot be undone.
             </p>
 
             <div className="modal-actions">
 
               <button
                 type="button"
-                className="secondary-button"
+                className="secondary-button cancel-delete-button"
                 disabled={deleting}
                 onClick={() =>
                   setProductToDelete(null)
@@ -1182,7 +1341,7 @@ function App() {
               >
                 {deleting
                   ? "Deleting..."
-                  : "Yes, Delete"}
+                  : "🗑 Delete Product"}
               </button>
 
             </div>
@@ -1293,9 +1452,13 @@ function AddProduct({
   };
 
   const handleImage = (event) => {
-    const file = event.target.files[0];
+    const file = event.target.files?.[0];
 
     if (!file) return;
+
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
 
     setImage(file);
     setPreview(
@@ -1312,7 +1475,6 @@ function AddProduct({
       <div className="card-header">
 
         <div>
-
           <p className="small-label">
             PRODUCT ENROLLMENT
           </p>
@@ -1320,7 +1482,6 @@ function AddProduct({
           <h2>
             Add Product to Database
           </h2>
-
         </div>
 
       </div>
@@ -1337,15 +1498,23 @@ function AddProduct({
 
             {preview ? (
 
-              <img
-                src={preview}
-                alt="Product preview"
-              />
+              <div className="add-image-preview">
+
+                <img
+                  src={preview}
+                  alt="Product preview"
+                />
+
+                <span>
+                  Click to replace image
+                </span>
+
+              </div>
 
             ) : (
 
               <>
-                <span>
+                <span className="upload-icon">
                   📷
                 </span>
 
@@ -1397,6 +1566,8 @@ function AddProduct({
 
           <input
             type="number"
+            min="0"
+            step="0.01"
             value={price}
             onChange={(e) =>
               setPrice(e.target.value)
@@ -1414,6 +1585,7 @@ function AddProduct({
 
           <input
             type="number"
+            min="0"
             value={stock}
             onChange={(e) =>
               setStock(e.target.value)
@@ -1462,8 +1634,8 @@ function AddProduct({
         disabled={loading}
       >
         {loading
-          ? "Adding Product..."
-          : "Enroll Product in Database"}
+          ? "⏳ Adding Product..."
+          : "✓ Enroll Product in Database"}
       </button>
 
     </form>
@@ -1497,9 +1669,9 @@ function Inventory({
     );
 
   return (
-    <section className="card">
+    <section className="card inventory-card">
 
-      <div className="card-header">
+      <div className="card-header inventory-card-header">
 
         <div>
 
@@ -1511,35 +1683,54 @@ function Inventory({
             Inventory
           </h2>
 
+          <span className="inventory-count">
+            {inventory.length} product
+            {inventory.length !== 1
+              ? "s"
+              : ""}{" "}
+            in database
+          </span>
+
         </div>
 
-        <input
-          className="search-input"
-          value={search}
-          onChange={(e) =>
-            setSearch(e.target.value)
-          }
-          placeholder="Search products..."
-        />
+        <div className="inventory-search-wrapper">
+          <span>⌕</span>
+
+          <input
+            className="search-input"
+            value={search}
+            onChange={(e) =>
+              setSearch(e.target.value)
+            }
+            placeholder="Search products..."
+          />
+        </div>
 
       </div>
 
       {loading ? (
 
         <div className="empty-state">
-          Loading inventory...
+          <div className="loading-spinner"></div>
+          <p>Loading inventory...</p>
         </div>
 
       ) : filteredInventory.length === 0 ? (
 
         <div className="empty-state">
 
-          <div>
+          <div className="empty-icon">
             📦
           </div>
 
+          <strong>
+            No products found
+          </strong>
+
           <p>
-            No products found.
+            {search
+              ? "Try a different search term."
+              : "Add your first product to the inventory."}
           </p>
 
         </div>
@@ -1573,7 +1764,7 @@ function Inventory({
             </span>
 
             <span>
-              Actions
+              Action
             </span>
 
           </div>
@@ -1588,15 +1779,15 @@ function Inventory({
                 key={item.id}
               >
 
-                <span>
+                <span className="inventory-id">
                   #{item.id}
                 </span>
 
-                <strong>
+                <strong className="inventory-product-name">
                   {item.name}
                 </strong>
 
-                <span>
+                <span className="inventory-price">
                   ₹
                   {Number(
                     item.price
@@ -1605,7 +1796,7 @@ function Inventory({
                   )}
                 </span>
 
-                <span>
+                <span className="inventory-gst">
                   {item.gst_rate}%
                 </span>
 
@@ -1616,6 +1807,7 @@ function Inventory({
                       : "stock-bad"
                   }
                 >
+                  <span className="stock-dot"></span>
                   {item.stock}
                 </span>
 
@@ -1625,12 +1817,13 @@ function Inventory({
                   onClick={() =>
                     onDelete(item)
                   }
+                  title={`Delete ${item.name}`}
                 >
-                  🗑 Delete
+                  <span>🗑</span>
+                  Delete
                 </button>
 
               </div>
-
             )
           )}
 
